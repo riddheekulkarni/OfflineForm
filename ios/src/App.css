@@ -1,0 +1,294 @@
+
+/* Page and background */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: #f5e6ce;
+}
+
+body {
+  display: block;
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  color: #49251f;
+  font-family: Georgia, "Times New Roman", serif;
+  background-color: #f5e6ce;
+  background-image: url("/app-background.jpeg");
+  background-repeat: no-repeat;
+  background-position: center top;
+  background-size: 100% auto;
+  background-attachment: scroll;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Main content */
+.app-container {
+  width: 100%;
+  max-width: 760px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 30px 22px 44px;
+}
+
+/* Header */
+.app-header {
+  margin: 0 auto 24px;
+  padding: 22px 20px;
+  text-align: center;
+  border: 1px solid rgba(133, 82, 36, 0.25);
+  border-radius: 22px;
+  background: rgba(255, 248, 232, 0.91);
+  box-shadow: 0 5px 18px rgba(76, 39, 24, 0.12);
+}
+
+.app-eyebrow {
+  margin: 0 0 8px;
+  color: #986a27;
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 3px;
+}
+
+.app-header h1 {
+  margin: 0 0 10px;
+  color: #792c25;
+  font-size: clamp(27px, 5vw, 36px);
+  line-height: 1.2;
+}
+
+.app-header > p:last-child {
+  margin: 0;
+  color: #60483a;
+  font-family: Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* Main panels */
+.registration-form,
+.sync-section,
+.registration-counts,
+.batch-section {
+  margin-bottom: 20px;
+  padding: 22px;
+  border: 1px solid rgba(145, 99, 48, 0.27);
+  border-radius: 20px;
+  background: rgba(255, 250, 239, 0.94);
+  box-shadow: 0 5px 18px rgba(76, 39, 24, 0.12);
+  backdrop-filter: blur(3px);
+}
+
+/* Registration form */
+.registration-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.registration-form h2 {
+  margin-bottom: 8px;
+}
+
+.registration-form label {
+  margin-top: 5px;
+  color: #572b23;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.registration-form input {
+  width: 100%;
+  min-height: 49px;
+  padding: 13px 14px;
+  border: 1px solid #d1b99a;
+  border-radius: 10px;
+  background: rgba(255, 255, 252, 0.97);
+  color: #38231d;
+  font-family: Arial, sans-serif;
+  font-size: 16px;
+}
+
+.registration-form input::placeholder {
+  color: #897669;
+  opacity: 1;
+}
+
+.registration-form input:focus {
+  border-color: #9a5b31;
+  outline: 3px solid rgba(192, 145, 65, 0.22);
+}
+
+/* Buttons */
+button {
+  width: 100%;
+  min-height: 49px;
+  margin-top: 10px;
+  padding: 13px 16px;
+  border: 1px solid #762d24;
+  border-radius: 12px;
+  background: #812f26;
+  color: #fffaf0;
+  font-family: Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button:hover:not(:disabled) {
+  background: #69251f;
+}
+
+button:focus-visible {
+  outline: 3px solid #c69b4b;
+  outline-offset: 3px;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Headings and supporting text */
+h2 {
+  margin: 0 0 14px;
+  color: #792c25;
+  font-size: 22px;
+  line-height: 1.3;
+}
+
+h3 {
+  margin: 0 0 12px;
+  color: #792c25;
+  font-size: 19px;
+}
+
+.sync-section p,
+.registration-counts p,
+.batch-item p {
+  color: #60483a;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Registration counts */
+.count-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 2px;
+  border-bottom: 1px solid #eadbc4;
+  color: #51342a;
+  font-family: Arial, sans-serif;
+  font-size: 15px;
+}
+
+.count-row:last-child {
+  border-bottom: 0;
+}
+
+.count-row strong {
+  color: #792c25;
+  font-size: 23px;
+}
+
+/* Status messages */
+.status-message {
+  margin: 16px 0 20px;
+  padding: 14px 16px;
+  border: 1px solid #d9bd83;
+  border-radius: 12px;
+  background: rgba(255, 241, 207, 0.97);
+  color: #56351f;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+/* CSV batch details */
+.batch-item {
+  margin-top: 16px;
+  padding: 17px;
+  border: 1px solid #e2cfb1;
+  border-radius: 14px;
+  background: rgba(255, 253, 246, 0.96);
+}
+
+.batch-item ul {
+  padding-left: 22px;
+  color: #51342a;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+
+.email-details {
+  margin: 8px 0;
+  color: #51342a;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.help-text {
+  color: #60483a;
+  font-family: Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* Tablet sizing */
+@media (min-width: 700px) {
+  .app-container {
+    padding-top: 36px;
+  }
+
+  .registration-form,
+  .sync-section,
+  .registration-counts,
+  .batch-section {
+    padding: 26px;
+  }
+}
+
+/* Smaller screens */
+@media (max-width: 420px) {
+  .app-container {
+    padding: 16px 12px 28px;
+  }
+
+  .app-header {
+    padding: 19px 14px;
+  }
+
+  .registration-form,
+  .sync-section,
+  .registration-counts,
+  .batch-section {
+    padding: 17px;
+    border-radius: 16px;
+  }
+}
+
+/* Respect accessibility preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
+}
