@@ -1,13 +1,20 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import { VitePWA } from 'vite-plugin-pwa'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
   plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'icons.svg', 'apple-touch-icon.png'],
+
+      includeAssets: [
+        'favicon.svg',
+        'icons.svg',
+        'apple-touch-icon.png',
+        'app-background.jpeg',
+      ],
+
       manifest: {
         name: 'Event Registration',
         short_name: 'Event Register',
@@ -18,18 +25,22 @@ export default defineConfig({
         orientation: 'any',
         start_url: '/',
         scope: '/',
+
         icons: [
           {
             src: '/apple-touch-icon.png',
             sizes: '180x180',
             type: 'image/png',
-            purpose: 'any'
-          }
-        ]
+            purpose: 'any',
+          },
+        ],
       },
+
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,ico,png,woff2}']
-      }
-    })
-  ]
-})
+        globPatterns: [
+          '**/*.{js,css,html,svg,ico,png,jpg,jpeg,webp,woff2}',
+        ],
+      },
+    }),
+  ],
+});

@@ -8,6 +8,7 @@ export interface Registration {
   sync_status: SyncStatus;
   created_at: string;
   namePhoneKey: string;
+  tablet_label?: string;
 }
 
 const DB_NAME = 'eventRegistrationIOS';
@@ -15,6 +16,32 @@ const DB_VERSION = 2;
 const STORE_NAME = 'registrations';
 
 let dbPromise: Promise<IDBDatabase> | null = null;
+
+export function normalizeIndianPhone(value: string): string {
+  let phone = value.trim().replace(/[\s()-]/g, '');
+
+  if (phone.startsWith('+91')) {
+    phone = phone.slice(3);
+  } else if (phone.startsWith('91') && phone.length === 12) {
+    phone = phone.slice(2);
+  }
+
+  if (phone.startsWith('0') && phone.length === 11) {
+    phone = phone.slice(1);
+  }
+
+  if (!/^[6-9][0-9]{9}$/.test(phone)) {
+    return '';
+  }
+
+  return phone;
+}
+
+export function validatePersonName(value: string): boolean {
+  const clean = value.normalize('NFKC').trim().replace(/\s+/gu, ' ');
+
+  return /^[\p{L}\p{M}]+(?:[ .’‘'-][\p{L}\p{M}]+)*$/u.test(clean);
+}
 
 function openDatabase(): Promise<IDBDatabase> {
   if (dbPromise) {
@@ -80,7 +107,7 @@ function openDatabase(): Promise<IDBDatabase> {
       dbPromise = null;
       reject(
         new Error(
-          'Database upgrade is blocked. Close other tabs or app windows using this app, then try again.'
+          'Database upgrade is blocked. Close other app tabs and try again.'
         )
       );
     };
@@ -91,39 +118,42 @@ function openDatabase(): Promise<IDBDatabase> {
 
 function createNamePhoneKey(name: string, phone: string): string {
   const normalizedName = name
+    .normalize('NFKC')
     .trim()
-    .replace(/\s+/g, ' ')
+    .replace(/\s+/gu, ' ')
     .toLowerCase();
 
-  const normalizedPhone = phone.trim();
-
-  return JSON.stringify([normalizedName, normalizedPhone]);
+  return JSON.stringify([
+    normalizedName,
+    normalizeIndianPhone(phone),
+  ]);
 }
 
 export async function addRegistration(
   name: string,
   phone: string,
-  city: string
+  city: string,
+  tabletLabel = 'T1'
 ): Promise<number> {
   const db = await openDatabase();
 
-  const cleanName = name.trim().replace(/\s+/g, ' ');
-  const cleanPhone = phone.trim();
-  const cleanCity = city.trim().replace(/\s+/g, ' ');
+  const cleanName = name.normalize('NFKC').trim().replace(/\s+/gu, ' ');
+  const cleanPhone = normalizeIndianPhone(phone);
+  const cleanCity = city.normalize('NFKC').trim().replace(/\s+/gu, ' ');
 
-  if (!cleanName || !cleanPhone || !cleanCity) {
+  if (!cleanName || !phone.trim() || !cleanCity) {
     throw new Error('Please fill in all three fields.');
   }
 
-  if (!/^[A-Za-z ]+$/.test(cleanName)) {
-    throw new Error('Name must contain letters and spaces only.');
+  if (!validatePersonName(cleanName)) {
+    throw new Error('Name contains invalid characters.');
   }
 
-  if (!/^[A-Za-z ]+$/.test(cleanCity)) {
-    throw new Error('City must contain letters and spaces only.');
+  if (!validatePersonName(cleanCity)) {
+    throw new Error('City contains invalid characters.');
   }
 
-  if (!/^[6-9][0-9]{9}$/.test(cleanPhone)) {
+  if (!cleanPhone) {
     throw new Error('Please enter a valid 10-digit Indian mobile number.');
   }
 
@@ -134,44 +164,79 @@ export async function addRegistration(
     sync_status: 'pending',
     created_at: new Date().toISOString(),
     namePhoneKey: createNamePhoneKey(cleanName, cleanPhone),
+    tablet_label: /^T[1-7]$/.test(tabletLabel) ? tabletLabel : 'T1',
   };
 
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(STORE_NAME, 'readwrite');
     const store = transaction.objectStore(STORE_NAME);
-    const request = store.add(registration);
+    const existingRequest = store.getAll();
 
     let registrationId: number | undefined;
     let requestError: Error | null = null;
 
-    request.onsuccess = () => {
-      registrationId = request.result as number;
-    };
+    existingRequest.onsuccess = () => {
+      const existing = existingRequest.result as Registration[];
+      const normalizedName = cleanName.toLowerCase();
 
-    request.onerror = () => {
-      if (request.error?.name === 'ConstraintError') {
+      const duplicate = existing.some((item) => {
+        const oldPhone = normalizeIndianPhone(item.phone);
+        const oldName = item.name
+          .normalize('NFKC')
+          .trim()
+          .replace(/\s+/gu, ' ')
+          .toLowerCase();
+
+        return oldPhone === cleanPhone && oldName === normalizedName;
+      });
+
+      if (duplicate) {
         requestError = new Error(
           'This participant with the same name and phone number is already registered on this device.'
         );
-      } else {
-        requestError = new Error(
-          request.error?.message ?? 'Could not save registration.'
-        );
+
+        transaction.abort();
+        return;
       }
+
+      registration.namePhoneKey = createNamePhoneKey(cleanName, cleanPhone);
+
+      const addRequest = store.add(registration);
+
+      addRequest.onsuccess = () => {
+        registrationId = addRequest.result as number;
+      };
+
+      addRequest.onerror = () => {
+        if (addRequest.error?.name === 'ConstraintError') {
+          requestError = new Error(
+            'This participant with the same name and phone number is already registered on this device.'
+          );
+        } else {
+          requestError = new Error(
+            addRequest.error?.message ?? 'Could not save registration.'
+          );
+        }
+      };
+    };
+
+    existingRequest.onerror = () => {
+      requestError = new Error(
+        existingRequest.error?.message ??
+          'Could not check existing registrations.'
+      );
+
+      transaction.abort();
     };
 
     transaction.oncomplete = () => {
       if (requestError) {
         reject(requestError);
-        return;
-      }
-
-      if (registrationId === undefined) {
+      } else if (registrationId === undefined) {
         reject(new Error('Registration was not saved.'));
-        return;
+      } else {
+        resolve(registrationId);
       }
-
-      resolve(registrationId);
     };
 
     transaction.onerror = () => {
@@ -208,69 +273,50 @@ export async function getAllRegistrations(): Promise<Registration[]> {
         request.error ?? new Error('Could not retrieve registrations.')
       );
     };
+
+    transaction.onerror = () => {
+      reject(
+        transaction.error ?? new Error('Could not retrieve registrations.')
+      );
+    };
   });
 }
 
 export async function getPendingRegistrations(): Promise<Registration[]> {
-  const db = await openDatabase();
+  const all = await getAllRegistrations();
 
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(STORE_NAME, 'readonly');
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.index('status').getAll('pending');
-
-    request.onsuccess = () => {
-      resolve(request.result as Registration[]);
-    };
-
-    request.onerror = () => {
-      reject(
-        request.error ?? new Error('Could not retrieve pending records.')
-      );
-    };
-  });
+  return all.filter(
+    (registration) => registration.sync_status !== 'synced'
+  );
 }
 
 export async function getRegistrationCounts(): Promise<{
   pending: number;
   synced: number;
 }> {
-  const db = await openDatabase();
+  const all = await getAllRegistrations();
 
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(STORE_NAME, 'readonly');
-    const store = transaction.objectStore(STORE_NAME);
+  let pending = 0;
+  let synced = 0;
 
-    // Fast check: retrieve all records directly to avoid iOS WebKit index counting stalls
-    const request = store.getAll();
+  for (const registration of all) {
+    if (registration.sync_status === 'synced') {
+      synced++;
+    } else {
+      pending++;
+    }
+  }
 
-    request.onsuccess = () => {
-      const all = request.result as Registration[];
-      let pending = 0;
-      let synced = 0;
-
-      for (let i = 0; i < all.length; i++) {
-        if (all[i].sync_status === 'synced') {
-          synced++;
-        } else {
-          pending++;
-        }
-      }
-
-      resolve({ pending, synced });
-    };
-
-    request.onerror = () => {
-      reject(request.error ?? new Error('Could not count registrations.'));
-    };
-
-    transaction.onerror = () => {
-      reject(transaction.error ?? new Error('Counting transaction failed.'));
-    };
-  });
+  return { pending, synced };
 }
 
-export async function markRegistrationsSynced(ids: number[]): Promise<void> {
+export async function markRegistrationsSynced(
+  ids: number[]
+): Promise<void> {
+  if (ids.length === 0) {
+    return;
+  }
+
   const db = await openDatabase();
 
   return new Promise((resolve, reject) => {
@@ -290,9 +336,7 @@ export async function markRegistrationsSynced(ids: number[]): Promise<void> {
       };
     }
 
-    transaction.oncomplete = () => {
-      resolve();
-    };
+    transaction.oncomplete = () => resolve();
 
     transaction.onerror = () => {
       reject(
@@ -310,4 +354,42 @@ export async function markRegistrationsSynced(ids: number[]): Promise<void> {
 
 export async function initializeDatabase(): Promise<void> {
   await openDatabase();
+}
+
+export async function assignTabletLabelToLegacyRecords(
+  tabletLabel: string
+): Promise<void> {
+  const db = await openDatabase();
+  const safeLabel = /^T[1-7]$/.test(tabletLabel) ? tabletLabel : 'T1';
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(STORE_NAME, 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+      const records = request.result as Registration[];
+
+      for (const record of records) {
+        if (!record.tablet_label) {
+          record.tablet_label = safeLabel;
+          store.put(record);
+        }
+      }
+    };
+
+    transaction.oncomplete = () => resolve();
+
+    transaction.onerror = () => {
+      reject(
+        transaction.error ?? new Error('Could not save tablet labels.')
+      );
+    };
+
+    transaction.onabort = () => {
+      reject(
+        transaction.error ?? new Error('Tablet label update was cancelled.')
+      );
+    };
+  });
 }

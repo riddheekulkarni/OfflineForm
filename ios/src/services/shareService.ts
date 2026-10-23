@@ -1,13 +1,16 @@
-
 import type { CSVFile } from './csvService';
 
-export async function shareCSVFiles(files: CSVFile[]): Promise<void> {
+export async function shareCSVFiles(
+  files: CSVFile[]
+): Promise<void> {
   if (files.length === 0) {
     throw new Error('There are no CSV files to share.');
   }
 
   if (files.length > 5) {
-    throw new Error('A maximum of five CSV files can be shared at once.');
+    throw new Error(
+      'A maximum of five CSV files can be shared at once.'
+    );
   }
 
   const attachments = files.map(

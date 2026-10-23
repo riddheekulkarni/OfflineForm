@@ -1,13 +1,11 @@
-
 :root {
   font-family: Arial, Helvetica, sans-serif;
-  color: #17212f;
-  background: #f3f6fa;
+  color: #49251f;
+  background: #f5e6ce;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
   font-weight: 400;
 }
 
@@ -18,7 +16,6 @@
 html {
   min-width: 320px;
   min-height: 100%;
-  background: #f3f6fa;
 }
 
 body {
@@ -28,12 +25,13 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font-family: inherit;
 }
 
 button:focus-visible {
-  outline: 3px solid #9ac4f5;
+  outline: 3px solid #c69b4b;
   outline-offset: 2px;
 }
 
