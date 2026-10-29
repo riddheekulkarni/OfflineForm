@@ -3,6 +3,11 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  define: {
+    // Shown in the device check so you can see which build an iPad runs.
+    __BUILD_TIME__: JSON.stringify(Date.now()),
+  },
+
   plugins: [
     react(),
     VitePWA({

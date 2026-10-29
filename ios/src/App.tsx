@@ -27,6 +27,15 @@ import {
 
 import { shareCSVFiles } from './services/shareService';
 
+import {
+  collectHealthInput,
+  evaluateHealth,
+  type HealthReport,
+  type HealthStatus,
+} from './services/healthCheck';
+
+import { describeItem, healthText } from './services/healthText';
+
 type Language = 'en' | 'hi' | 'mr';
 type TabletLabel = 'T1' | 'T2' | 'T3' | 'T4' | 'T5' | 'T6' | 'T7';
 
@@ -36,6 +45,13 @@ interface PreparedBatch extends EmailBatch {
 
 const LANGUAGE_KEY = 'eventRegistration.language';
 const TABLET_KEY = 'eventRegistration.tabletLabel';
+const LAST_EXPORT_KEY = 'eventRegistration.lastExportAt';
+
+const HEALTH_MARKERS: Record<HealthStatus, string> = {
+  ok: '✓',
+  warn: '!',
+  neutral: '–',
+};
 
 const TABLETS: TabletLabel[] = [
   'T1',
@@ -298,6 +314,28 @@ function getSavedTablet(): TabletLabel | '' {
   }
 }
 
+function getSavedLastExport(): number | null {
+  try {
+    const value = Number(localStorage.getItem(LAST_EXPORT_KEY));
+
+    return Number.isFinite(value) && value > 0 ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function rememberShareTime(): number {
+  const sharedAt = Date.now();
+
+  try {
+    localStorage.setItem(LAST_EXPORT_KEY, String(sharedAt));
+  } catch {
+    // The device check still works for this session.
+  }
+
+  return sharedAt;
+}
+
 function normalizePersonText(value: string): string {
   return value.normalize('NFKC').trim().replace(/\s+/gu, ' ');
 }
@@ -326,8 +364,14 @@ function App() {
     null,
   );
   const [batches, setBatches] = useState<PreparedBatch[]>([]);
+  const [lastExportAt, setLastExportAt] = useState<number | null>(
+    getSavedLastExport,
+  );
+  const [health, setHealth] = useState<HealthReport | null>(null);
+  const [healthTick, setHealthTick] = useState(0);
 
   const t = translations[language];
+  const h = healthText[language];
   const requestId = useRef(0);
   const mounted = useRef(false);
 
@@ -407,6 +451,7 @@ function App() {
     const refreshWhenActive = () => {
       if (document.visibilityState === 'visible') {
         void refreshCounts();
+        setHealthTick((tick) => tick + 1);
       }
     };
 
@@ -426,6 +471,30 @@ function App() {
       window.removeEventListener('focus', refreshWhenActive);
     };
   }, [refreshCounts, t.countWait, t.dbError]);
+
+  useEffect(() => {
+    // Wait for the counts so the card never claims "all sent" by mistake.
+    if (!countsLoaded) return;
+
+    let active = true;
+
+    void (async () => {
+      const input = await collectHealthInput({
+        tabletLabel,
+        pendingCount,
+        lastExportAt,
+        buildTime: __BUILD_TIME__,
+      });
+
+      if (active) {
+        setHealth(evaluateHealth(input));
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [countsLoaded, tabletLabel, pendingCount, lastExportAt, healthTick]);
 
   async function saveTablet(label: TabletLabel) {
     if (isChangingTablet) return;
@@ -622,6 +691,9 @@ function App() {
         setMessage(t.notConfirmed);
         return;
       }
+
+      // Remember when the volunteer last confirmed a share (device check).
+      setLastExportAt(rememberShareTime());
 
       if (pendingInBatch > 0) {
         await markRegistrationsSynced(batch.pendingRegistrationIds);
@@ -872,6 +944,41 @@ function App() {
             </article>
           ))}
         </section>
+      )}
+
+      {health && (
+        <details className="health-check">
+          <summary>
+            <span
+              className={
+                health.attention === 0 ? 'health-mark-ok' : 'health-mark-warn'
+              }
+              aria-hidden="true"
+            >
+              {health.attention === 0 ? '✓' : '!'}
+            </span>{' '}
+            {h.title}:{' '}
+            {health.attention === 0
+              ? h.allOk
+              : h.attention(health.attention)}
+          </summary>
+
+          <ul>
+            {health.items.map((item) => (
+              <li key={item.id} className={`health-${item.status}`}>
+                <span className="health-label">
+                  <span aria-hidden="true">
+                    {HEALTH_MARKERS[item.status]}
+                  </span>{' '}
+                  {h.labels[item.id]}
+                </span>
+                <span className="health-value">
+                  {describeItem(h, item)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </details>
       )}
     </main>
   );
