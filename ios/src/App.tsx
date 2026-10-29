@@ -15,6 +15,7 @@ import {
   initializeDatabase,
   markRegistrationsSynced,
   normalizeIndianPhone,
+  validatePersonName,
   type Registration,
 } from './database/database';
 
@@ -83,10 +84,12 @@ const translations = {
     sharing: 'Opening share...',
     setupRequired: 'Choose a tablet first.',
     fillAll: 'Please fill in all three fields.',
-    invalidName: 'Use letters and spaces only for the name.',
+    invalidName:
+      'Use only letters, spaces, dots, hyphens or apostrophes in the name.',
     invalidPhone:
       'Enter a valid Indian mobile number. You may include +91, spaces, hyphens or a leading zero.',
-    invalidCity: 'Use letters and spaces only for the city.',
+    invalidCity:
+      'Use only letters, spaces, dots, hyphens or apostrophes in the city.',
     duplicate:
       'This name and phone number are already registered on this device.',
     saved: 'Registration saved.',
@@ -159,10 +162,12 @@ const translations = {
     sharing: 'खुल रहा है...',
     setupRequired: 'पहले टैबलेट चुनें।',
     fillAll: 'तीनों जगह जानकारी भरें।',
-    invalidName: 'नाम में सिर्फ अक्षर और खाली जगह इस्तेमाल करें।',
+    invalidName:
+      'नाम में सिर्फ अक्षर, खाली जगह, बिंदु (.), हाइफ़न (-) या एपॉस्ट्रॉफ़ी इस्तेमाल करें।',
     invalidPhone:
       'सही भारतीय मोबाइल नंबर लिखें। +91, खाली जगह, हाइफ़न या शुरुआत में 0 भी लिख सकते हैं।',
-    invalidCity: 'शहर के नाम में सिर्फ अक्षर और खाली जगह इस्तेमाल करें।',
+    invalidCity:
+      'शहर के नाम में सिर्फ अक्षर, खाली जगह, बिंदु (.), हाइफ़न (-) या एपॉस्ट्रॉफ़ी इस्तेमाल करें।',
     duplicate: 'यह नाम और नंबर पहले से दर्ज है।',
     saved: 'जानकारी सेव हो गई।',
     noPending: 'शेयर करने के लिए कोई बाकी रिकॉर्ड नहीं है।',
@@ -230,10 +235,12 @@ const translations = {
     sharing: 'उघडत आहे...',
     setupRequired: 'आधी टॅबलेट निवडा.',
     fillAll: 'तिन्ही जागा भरा.',
-    invalidName: 'नावात फक्त अक्षरे आणि मोकळी जागा वापरा.',
+    invalidName:
+      'नावात फक्त अक्षरे, मोकळी जागा, टिंब (.), हायफन (-) किंवा अपॉस्ट्रॉफी वापरा.',
     invalidPhone:
       'योग्य भारतीय मोबाइल नंबर लिहा. +91, मोकळी जागा, हायफन किंवा सुरुवातीला 0 वापरू शकता.',
-    invalidCity: 'शहराच्या नावात फक्त अक्षरे आणि मोकळी जागा वापरा.',
+    invalidCity:
+      'शहराच्या नावात फक्त अक्षरे, मोकळी जागा, टिंब (.), हायफन (-) किंवा अपॉस्ट्रॉफी वापरा.',
     duplicate: 'हे नाव आणि नंबर आधीच नोंदवले आहेत.',
     saved: 'माहिती सेव्ह झाली.',
     noPending: 'शेअर करण्यासाठी बाकी नोंदी नाहीत.',
@@ -457,10 +464,7 @@ function App() {
       return;
     }
 
-    const lettersAndSpaces =
-      /^[\p{L}\p{M}]+(?:\s+[\p{L}\p{M}]+)*$/u;
-
-    if (!lettersAndSpaces.test(cleanName)) {
+    if (!validatePersonName(cleanName)) {
       setMessage(t.invalidName);
       return;
     }
@@ -470,7 +474,7 @@ function App() {
       return;
     }
 
-    if (!lettersAndSpaces.test(cleanCity)) {
+    if (!validatePersonName(cleanCity)) {
       setMessage(t.invalidCity);
       return;
     }
