@@ -37,10 +37,18 @@ export function normalizeIndianPhone(value: string): string {
   return phone;
 }
 
+// One rule for both name and city. Accepts letters and combining marks from
+// any script (Latin, Devanagari, ...), plus the joiners Devanagari uses inside
+// words, separated by spaces, dots, hyphens or apostrophes. Examples that pass:
+// "R. K. Patil", "Joshi-Patil", "D'Souza", "Pimpri-Chinchwad", "पिंपरी-चिंचवड".
+// A single trailing dot is allowed for a final initial ("Patil R.").
+const PERSON_TEXT_PATTERN =
+  /^[\p{L}\p{M}][\p{L}\p{M}‌‍]*(?:[ .’‘'-]+[\p{L}\p{M}][\p{L}\p{M}‌‍]*)*\.?$/u;
+
 export function validatePersonName(value: string): boolean {
   const clean = value.normalize('NFKC').trim().replace(/\s+/gu, ' ');
 
-  return /^[\p{L}\p{M}]+(?:[ .’‘'-][\p{L}\p{M}]+)*$/u.test(clean);
+  return PERSON_TEXT_PATTERN.test(clean);
 }
 
 function openDatabase(): Promise<IDBDatabase> {

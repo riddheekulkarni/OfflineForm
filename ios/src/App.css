@@ -289,6 +289,91 @@ h3 {
   line-height: 1.6;
 }
 
+/* Device check: collapsed card at the bottom of the page. */
+
+.health-check {
+  margin-bottom: 20px;
+  padding: 14px 18px;
+  border: 1px solid rgba(145, 99, 48, 0.27);
+  border-radius: 16px;
+  background: rgba(255, 250, 239, 0.94);
+  box-shadow: 0 5px 18px rgba(76, 39, 24, 0.12);
+  color: #49251f;
+  font-size: 14px;
+}
+
+.health-check summary {
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #572b23;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.health-mark-ok,
+.health-mark-warn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.health-mark-ok {
+  background: #2f6b3a;
+}
+
+.health-mark-warn {
+  background: #a25a00;
+}
+
+.health-check ul {
+  margin: 12px 0 2px;
+  padding: 0;
+  list-style: none;
+}
+
+.health-check li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 14px;
+  padding: 9px 0 9px 10px;
+  border-top: 1px solid #e8d7bb;
+  border-left: 4px solid transparent;
+  line-height: 1.5;
+}
+
+.health-check li.health-ok {
+  border-left-color: #2f6b3a;
+}
+
+.health-check li.health-warn {
+  border-left-color: #a25a00;
+  background: rgba(255, 241, 207, 0.7);
+  font-weight: 700;
+}
+
+.health-check li.health-neutral {
+  border-left-color: #b9a78d;
+}
+
+.health-label {
+  color: #60483a;
+}
+
+.health-value {
+  max-width: 100%;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
 @media (min-width: 700px) {
   .app-container {
     padding-top: 36px;
