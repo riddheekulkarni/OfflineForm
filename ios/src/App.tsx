@@ -30,6 +30,7 @@ import { shareCSVFiles } from './services/shareService';
 import {
   collectHealthInput,
   evaluateHealth,
+  formatBuildLabel,
   type HealthReport,
   type HealthStatus,
 } from './services/healthCheck';
@@ -345,7 +346,7 @@ function App() {
   const [phone, setPhone] = useState('');
   const [city, setCity] = useState('');
 
-  const [language, setLanguage] = useState<Language>(getSavedLanguage);
+  const [language] = useState<Language>(getSavedLanguage);
   const [tabletLabel, setTabletLabel] = useState<TabletLabel | ''>(
     getSavedTablet,
   );
@@ -743,6 +744,7 @@ function App() {
   return (
     <main className="app-container">
       <header className="app-header">
+        {/*
         <div className="header-controls">
           <label className="compact-control">
             <span>{t.language}</span>
@@ -760,6 +762,7 @@ function App() {
             </select>
           </label>
         </div>
+        */}
 
         <p className="app-eyebrow">{t.welcome}</p>
         <h1>{t.title}</h1>
@@ -813,9 +816,13 @@ function App() {
         <input
           id="phone"
           type="tel"
-          inputMode="tel"
+          inputMode="numeric"
+          lang="en"
+          dir="ltr"
           value={phone}
-          onChange={(event) => setPhone(event.target.value)}
+          onChange={(event) =>
+            setPhone(event.target.value.replace(/[^0-9+\s-]/g, ''))
+          }
           placeholder={t.phonePlaceholder}
           maxLength={16}
           autoComplete="tel"
@@ -947,7 +954,7 @@ function App() {
       )}
 
       {health && (
-        <details className="health-check">
+        <details className="health-check" open>
           <summary>
             <span
               className={
@@ -961,6 +968,9 @@ function App() {
             {health.attention === 0
               ? h.allOk
               : h.attention(health.attention)}
+            <span className="health-build">
+              {h.labels.version}: {formatBuildLabel(__BUILD_TIME__)}
+            </span>
           </summary>
 
           <ul>

@@ -1,3 +1,5 @@
+import * as SanscriptModule from '@indic-transliteration/sanscript';
+
 export type SyncStatus = 'pending' | 'synced';
 
 export interface Registration {
@@ -16,6 +18,77 @@ const DB_VERSION = 2;
 const STORE_NAME = 'registrations';
 
 let dbPromise: Promise<IDBDatabase> | null = null;
+
+// Keep the library import compatible with either a default export
+// or a direct module export.
+type SanscriptApi = {
+  t(
+    input: string,
+    from: string,
+    to: string,
+    options?: { syncope?: boolean }
+  ): string;
+};
+
+const Sanscript = (
+  (SanscriptModule as unknown as { default?: SanscriptApi }).default ??
+  (SanscriptModule as unknown as SanscriptApi)
+);
+
+// Converts a name into a common comparison form.
+// This function is only for duplicate checking.
+// It does NOT change the name saved in the database.
+export function normalizeNameForDuplicate(value: string): string {
+  const cleanName = value
+    .normalize('NFKC')
+    .trim()
+    .replace(/\s+/gu, ' ')
+    .toLowerCase();
+
+  if (!cleanName) {
+    return '';
+  }
+
+  try {
+    let devanagariName = cleanName;
+
+    // If the name is not already in Devanagari, try converting
+    // its Roman spelling into Devanagari.
+    if (!/\p{Script=Devanagari}/u.test(cleanName)) {
+      const converted = Sanscript.t(
+        cleanName,
+        'itrans',
+        'devanagari',
+        { syncope: true }
+      );
+
+      // Use the converted result only if Devanagari was produced.
+      if (/\p{Script=Devanagari}/u.test(converted)) {
+        devanagariName = converted;
+      } else {
+        return cleanName;
+      }
+    }
+
+    // Convert Devanagari into ITRANS so both scripts can be compared.
+    const romanizedName = Sanscript.t(
+      devanagariName,
+      'devanagari',
+      'itrans'
+    );
+
+    return romanizedName
+      .normalize('NFKD')
+      .replace(/\p{M}/gu, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/gu, ' ')
+      .trim()
+      .replace(/\s+/gu, ' ');
+  } catch {
+    // If transliteration fails, fall back to ordinary text matching.
+    return cleanName;
+  }
+}
 
 export function normalizeIndianPhone(value: string): string {
   let phone = value.trim().replace(/[\s()-]/g, '');
@@ -49,6 +122,22 @@ export function validatePersonName(value: string): boolean {
   const clean = value.normalize('NFKC').trim().replace(/\s+/gu, ' ');
 
   return PERSON_TEXT_PATTERN.test(clean);
+}
+
+// This remains the original literal name + phone key.
+// Keeping it unchanged avoids a database migration and preserves
+// the existing unique IndexedDB index.
+function createNamePhoneKey(name: string, phone: string): string {
+  const normalizedName = name
+    .normalize('NFKC')
+    .trim()
+    .replace(/\s+/gu, ' ')
+    .toLowerCase();
+
+  return JSON.stringify([
+    normalizedName,
+    normalizeIndianPhone(phone),
+  ]);
 }
 
 function openDatabase(): Promise<IDBDatabase> {
@@ -124,19 +213,6 @@ function openDatabase(): Promise<IDBDatabase> {
   return dbPromise;
 }
 
-function createNamePhoneKey(name: string, phone: string): string {
-  const normalizedName = name
-    .normalize('NFKC')
-    .trim()
-    .replace(/\s+/gu, ' ')
-    .toLowerCase();
-
-  return JSON.stringify([
-    normalizedName,
-    normalizeIndianPhone(phone),
-  ]);
-}
-
 export async function addRegistration(
   name: string,
   phone: string,
@@ -185,17 +261,17 @@ export async function addRegistration(
 
     existingRequest.onsuccess = () => {
       const existing = existingRequest.result as Registration[];
-      const normalizedName = cleanName.toLowerCase();
+
+      const normalizedName = normalizeNameForDuplicate(cleanName);
 
       const duplicate = existing.some((item) => {
         const oldPhone = normalizeIndianPhone(item.phone);
-        const oldName = item.name
-          .normalize('NFKC')
-          .trim()
-          .replace(/\s+/gu, ' ')
-          .toLowerCase();
+        const oldName = normalizeNameForDuplicate(item.name);
 
-        return oldPhone === cleanPhone && oldName === normalizedName;
+        return (
+          oldPhone === cleanPhone &&
+          oldName === normalizedName
+        );
       });
 
       if (duplicate) {
@@ -207,8 +283,8 @@ export async function addRegistration(
         return;
       }
 
-      registration.namePhoneKey = createNamePhoneKey(cleanName, cleanPhone);
-
+      // Keep the original entered spelling in the database.
+      // Do not store the transliterated comparison name.
       const addRequest = store.add(registration);
 
       addRequest.onsuccess = () => {

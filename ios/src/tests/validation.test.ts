@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   normalizeIndianPhone,
+  normalizeNameForDuplicate,
   validatePersonName,
 } from '../database/database.ts';
 
@@ -15,18 +16,14 @@ describe('validatePersonName: accepts real names and cities', () => {
     'रोहित कुलकर्णी',
     'सुनील पाटील',
     'श्रीकृष्ण',
-    // Hyphenated names and cities (Pimpri-Chinchwad is a common Pune city).
     'Pimpri-Chinchwad',
     'पिंपरी-चिंचवड',
     'Joshi-Patil',
-    // Initials with dots, written before or after the surname.
     'R. K. Patil',
     'Patil R.',
     'St. Louis',
-    // Apostrophes, straight and curly.
     "O'Brien",
     'D’Souza',
-    // Devanagari joiners inside or at the end of a word.
     'क्ष‌त्रिय',
     'दुर्गा‍',
   ])('accepts %s', (value) => {
@@ -85,8 +82,38 @@ describe('normalizeIndianPhone', () => {
   });
 
   it('accepts the longest text the phone box allows (16 characters)', () => {
-    // The phone input has maxLength 16; "+91 98765 43210" must not be cut.
     expect('+91 98765 43210'.length).toBeLessThanOrEqual(16);
     expect(normalizeIndianPhone('+91 98765 43210')).toBe('9876543210');
+  });
+});
+
+describe('normalizeNameForDuplicate', () => {
+  it('matches Rahul written in English and Devanagari', () => {
+    expect(normalizeNameForDuplicate('Rahul')).toBe(
+      normalizeNameForDuplicate('राहुल')
+    );
+  });
+
+  it('matches Sunil Patil written in English and Marathi', () => {
+    expect(normalizeNameForDuplicate('Sunil Patil')).toBe(
+      normalizeNameForDuplicate('सुनील पाटील')
+    );
+  });
+
+  it('matches names even when extra spaces are entered', () => {
+    expect(normalizeNameForDuplicate('Rahul   Patil')).toBe(
+      normalizeNameForDuplicate(' राहुल पाटील ')
+    );
+  });
+
+  it('does not treat clearly different names as the same', () => {
+    expect(normalizeNameForDuplicate('Rahul')).not.toBe(
+      normalizeNameForDuplicate('Amit')
+    );
+  });
+
+  it('does not return an empty value for a valid name', () => {
+    expect(normalizeNameForDuplicate('Rohit Kulkarni')).not.toBe('');
+    expect(normalizeNameForDuplicate('रोहित कुलकर्णी')).not.toBe('');
   });
 });

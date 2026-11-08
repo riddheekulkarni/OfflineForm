@@ -289,7 +289,7 @@ h3 {
   line-height: 1.6;
 }
 
-/* Device check: collapsed card at the bottom of the page. */
+/* Device check card at the bottom of the page. */
 
 .health-check {
   margin-bottom: 20px;
@@ -306,6 +306,7 @@ h3 {
   min-height: 32px;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
   color: #572b23;
   font-weight: 700;
@@ -374,6 +375,14 @@ h3 {
   overflow-wrap: anywhere;
 }
 
+.health-build {
+  margin-left: auto;
+  color: #60483a;
+  font-size: 11px;
+  font-weight: 400;
+  text-align: right;
+}
+
 @media (min-width: 700px) {
   .app-container {
     padding-top: 36px;
@@ -391,6 +400,11 @@ h3 {
 @media (max-width: 420px) {
   .app-container {
     padding: 16px 12px 28px;
+  }
+
+  .health-build {
+    margin-left: 28px;
+    text-align: left;
   }
 
   .app-header {
