@@ -42,6 +42,7 @@ export function normalizeNameForDuplicate(value: string): string {
   const cleanName = value
     .normalize('NFKC')
     .trim()
+    .replace(/\./gu, ' ')
     .replace(/\s+/gu, ' ')
     .toLowerCase();
 

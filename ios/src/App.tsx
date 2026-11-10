@@ -939,6 +939,10 @@ function App() {
                 ))}
               </ul>
 
+              <p className="help-text">
+                Tap OK only after you have tapped Send in Mail.
+              </p>
+
               <button
                 type="button"
                 onClick={() => void handleShare(batch)}

@@ -106,6 +106,18 @@ describe('normalizeNameForDuplicate', () => {
     );
   });
 
+  it('ignores dots, case, and extra spaces in initials', () => {
+    expect(normalizeNameForDuplicate('R K Patil')).toBe(
+      normalizeNameForDuplicate('R. K. Patil')
+    );
+    expect(normalizeNameForDuplicate('R.K.Patil')).toBe(
+      normalizeNameForDuplicate('R K Patil')
+    );
+    expect(normalizeNameForDuplicate('r k patil')).toBe(
+      normalizeNameForDuplicate(' R.   K.   PATIL ')
+    );
+  });
+
   it('does not treat clearly different names as the same', () => {
     expect(normalizeNameForDuplicate('Rahul')).not.toBe(
       normalizeNameForDuplicate('Amit')
